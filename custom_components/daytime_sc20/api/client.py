@@ -275,57 +275,79 @@ class SC20Client:
         if changed and self._on_update is not None:
             self._on_update(self.state)
 
+    def _store(self, attribute: str, value: Any) -> bool:
+        """Store a parsed value, reporting whether it actually differs from what we had.
+
+        The models are frozen dataclasses, so equality is by value. This matters because
+        the device answers our 3-second heartbeat with an identical MESH_NETWORK frame
+        forever; treating each one as a change would rewrite every entity's state twenty
+        times a minute and fill the recorder with nothing.
+        """
+        if getattr(self.state, attribute) == value:
+            return False
+        setattr(self.state, attribute, value)
+        return True
+
     def _apply(self, frame: dict[str, Any]) -> bool:
-        """Fold one frame into the state. Returns whether anything was stored."""
+        """Fold one frame into the state. Returns whether anything actually changed."""
         title = frame.get("title")
         if not isinstance(title, str):
             return False
 
         try:
             if title in CCV_TITLES:
-                self.state.values = protocol.parse_channel_values(frame)
+                return self._store("values", protocol.parse_channel_values(frame))
             elif title == TITLE_CLOCK:
-                self.state.clock = protocol.parse_clock(frame)
+                # The clock ticks every read, so comparing it whole would always differ.
+                # Only the mode it carries is worth waking entities for.
+                clock = protocol.parse_clock(frame)
+                previous = self.state.clock
+                self.state.clock = clock
+                return previous is None or previous.mode != clock.mode
             elif title == TITLE_USRDTA:
-                self.state.device_info = protocol.parse_device_info(frame)
+                return self._store("device_info", protocol.parse_device_info(frame))
             elif title == TITLE_DYCL:
-                self.state.daycycle = protocol.parse_daycycle(frame)
+                return self._store("daycycle", protocol.parse_daycycle(frame))
             elif title == TITLE_DSCRPTN:
-                self.state.description = protocol.parse_description(frame)
+                return self._store("description", protocol.parse_description(frame))
             elif title == TITLE_MOON:
-                self.state.moon = protocol.parse_moon(frame)
+                return self._store("moon", protocol.parse_moon(frame))
             elif title == TITLE_CLOUD:
-                self.state.cloud = protocol.parse_cloud(frame)
+                return self._store("cloud", protocol.parse_cloud(frame))
             elif title == TITLE_ACCLIMATE:
-                self.state.acclimate = protocol.parse_acclimate(frame)
+                return self._store("acclimate", protocol.parse_acclimate(frame))
             elif title == TITLE_MESH_NETWORK:
-                self.state.mesh = protocol.parse_mesh_network(frame)
+                return self._store("mesh", protocol.parse_mesh_network(frame))
             elif title == TITLE_CCMODE:
                 mode = frame.get("mode")
-                if mode in (MODE_MANUAL, MODE_DAYCYCLE):
-                    self._store_mode(mode)
-                else:
+                if mode not in (MODE_MANUAL, MODE_DAYCYCLE):
                     return False
+                return self._store_mode(mode)
             elif title in (MODE_MANUAL, MODE_DAYCYCLE):
                 # A bare mode frame, sent when some other client changes the mode.
-                self._store_mode(title)
+                return self._store_mode(title)
             else:
                 # The firmware has many more titles than this integration models.
                 return False
         except SC20ProtocolError as err:
             _LOGGER.debug("could not parse %s from %s: %s", title, self.host, err)
             return False
-        return True
 
-    def _store_mode(self, mode: str) -> None:
+    def _store_mode(self, mode: str) -> bool:
         """Record a mode change that arrived on its own, without a full CLOCK frame.
 
         Mode is read from the clock, so it is folded in there. If no clock has arrived yet
         there is no timestamp to attach it to, and the next CLOCK frame will carry the mode
         anyway — so this drops it rather than inventing a time.
+
+        Returns whether the mode actually changed, so a repeated report does not wake every
+        entity for nothing.
         """
-        if self.state.clock is not None:
-            self.state.clock = Clock(self.state.clock.timestamp, mode=mode)
+        clock = self.state.clock
+        if clock is None or clock.mode == mode:
+            return False
+        self.state.clock = Clock(clock.timestamp, mode=mode)
+        return True
 
     def _resolve_waiters(self, frame: dict[str, Any]) -> None:
         title = frame.get("title")

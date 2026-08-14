@@ -53,8 +53,17 @@ class SC20Coordinator(DataUpdateCoordinator[SC20State]):
         """Publish state the device sent us without being asked.
 
         Called from the client's reader task, so it must not block or await.
+
+        Deliberately `async_update_listeners` and not `async_set_updated_data`: the latter
+        resets the refresh timer, and the device answers our 3-second heartbeat with a
+        MESH_NETWORK frame. Publishing that way meant the timer was reset ten times per
+        poll interval and the poll never fired — so the live channel values, which are the
+        one thing that is only ever polled, froze at whatever the connect burst reported.
+
+        Entities read `client.state` directly rather than `coordinator.data`, so notifying
+        listeners is all that is needed to get a push on screen.
         """
-        self.async_set_updated_data(state)
+        self.async_update_listeners()
 
     async def _async_update_data(self) -> SC20State:
         """Poll the live values, and everything else once in a while."""
@@ -82,6 +91,10 @@ class SC20Coordinator(DataUpdateCoordinator[SC20State]):
 
         Writes are never acknowledged by the device, so the client re-reads what it wrote.
         This wrapper exists so entities do not each have to remember to publish afterwards.
+
+        Same reasoning as `_handle_pushed_state`: notify listeners, leave the poll schedule
+        alone. A burst of writes — dragging a brightness slider, say — must not be able to
+        starve the poll either.
         """
         await action()
-        self.async_set_updated_data(self.client.state)
+        self.async_update_listeners()

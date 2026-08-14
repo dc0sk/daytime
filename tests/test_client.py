@@ -311,3 +311,86 @@ async def test_update_callback_fires_on_pushed_state(fake_device) -> None:
         await client.disconnect()
 
     assert seen, "the connect burst should have notified the listener"
+
+
+# --- change detection --------------------------------------------------------------------
+
+
+async def test_an_identical_frame_is_not_reported_as_a_change() -> None:
+    """The heartbeat returns the same MESH_NETWORK forever; that is not news.
+
+    Reporting it would rewrite every entity's state twenty times a minute and fill the
+    recorder with nothing.
+    """
+    import aiohttp
+
+    async with aiohttp.ClientSession() as session:
+        client = SC20Client("127.0.0.1:1", session)
+        updates: list[int] = []
+        client.set_update_callback(lambda state: updates.append(1))
+
+        frame = json.dumps(
+            {"title": "MESH_NETWORK", "from": "AA:BB:CC:DD:EE:FF", "clientList": ["AA:BB"]}
+        )
+        client._on_message(frame)
+        assert len(updates) == 1, "the first one is genuinely new"
+
+        for _ in range(10):
+            client._on_message(frame)
+        assert len(updates) == 1, "repeats must not notify"
+
+
+async def test_a_changed_frame_is_reported() -> None:
+    import aiohttp
+
+    async with aiohttp.ClientSession() as session:
+        client = SC20Client("127.0.0.1:1", session)
+        updates: list[int] = []
+        client.set_update_callback(lambda state: updates.append(1))
+
+        client._on_message(
+            json.dumps({"title": "CCV", "from": "AA:BB", "currentValues": [90, 90, 90]})
+        )
+        client._on_message(
+            json.dumps({"title": "CCV", "from": "AA:BB", "currentValues": [80, 80, 80]})
+        )
+        assert len(updates) == 2
+        assert client.state.values == ChannelValues((80, 80, 80))
+
+
+async def test_a_ticking_clock_alone_is_not_a_change() -> None:
+    """CLOCK differs on every read because it carries seconds. Only its mode matters."""
+    import aiohttp
+
+    async with aiohttp.ClientSession() as session:
+        client = SC20Client("127.0.0.1:1", session)
+        updates: list[int] = []
+        client.set_update_callback(lambda state: updates.append(1))
+
+        def clock(second: int, mode: str = "DAYCL_MODE") -> str:
+            return json.dumps(
+                {
+                    "title": "CLOCK",
+                    "from": "AA:BB",
+                    "year": 2026,
+                    "month": 8,
+                    "day": 14,
+                    "hour": 10,
+                    "min": 30,
+                    "sec": second,
+                    "mode": mode,
+                }
+            )
+
+        client._on_message(clock(1))
+        first = len(updates)
+        for second in range(2, 12):
+            client._on_message(clock(second))
+        assert len(updates) == first, "a ticking clock must not wake entities"
+
+        # ...but the mode riding along on it must.
+        client._on_message(clock(12, mode="MAN_MODE"))
+        assert len(updates) == first + 1
+        assert client.state.is_manual is True
+        # The timestamp is still kept current even when it does not notify.
+        assert client.state.clock.timestamp.second == 12
