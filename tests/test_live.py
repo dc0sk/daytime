@@ -89,6 +89,10 @@ async def test_all_expected_entities_exist(hass: HomeAssistant, live_entry) -> N
         "sensor.sc20_output_level",
         "number.sc20_moonlight_maximum",
         "number.sc20_cloud_probability",
+        "time.sc20_moonlight_start",
+        "time.sc20_moonlight_end",
+        "update.sc20_firmware",
+        "update.sc20_web_app",
     ]
     missing = [entity_id for entity_id in expected if hass.states.get(entity_id) is None]
     assert not missing, f"missing entities: {missing}"
@@ -181,3 +185,41 @@ async def test_config_frontend_prefills_from_real_hardware(
             [p.minute, *p.values] for p in state.daycycle.setpoints
         ], "the easy-mode form would not round-trip this device's schedule"
         protocol.validate_daycycle(regenerated)
+
+
+async def test_firmware_update_check_against_real_hardware(
+    hass: HomeAssistant, live_entry
+) -> None:
+    """The controller checks the vendor for itself; confirm we read its verdict correctly."""
+    info = live_entry.runtime_data.client.state.device_info
+    firmware = hass.states.get("update.sc20_firmware")
+    webapp = hass.states.get("update.sc20_web_app")
+    assert firmware is not None and webapp is not None
+
+    print(
+        f"\n  installed  firmware {firmware.attributes['installed_version']}"
+        f"  web app {webapp.attributes['installed_version']}"
+    )
+    print(
+        f"  latest     firmware {firmware.attributes['latest_version']}"
+        f"  web app {webapp.attributes['latest_version']}"
+    )
+    print(f"  device says update available: {info.firmware_available}")
+
+    # Our version comparison and the device's own flag must not disagree.
+    ours = firmware.state == "on" or webapp.state == "on"
+    assert ours == bool(info.firmware_available), (
+        f"we say update={ours} but the device says {info.firmware_available}"
+    )
+
+
+async def test_moonlight_times_read_back_as_clock_times(
+    hass: HomeAssistant, live_entry
+) -> None:
+    """Read-only: check the device's stored minutes render as sensible clock times."""
+    moon = live_entry.runtime_data.client.state.moon
+    start = hass.states.get("time.sc20_moonlight_start")
+    end = hass.states.get("time.sc20_moonlight_end")
+    assert start.state == f"{moon.start // 60:02d}:{moon.start % 60:02d}:00"
+    assert end.state == f"{moon.end // 60:02d}:{moon.end % 60:02d}:00"
+    print(f"\n  moonlight window {start.state} -> {end.state}")

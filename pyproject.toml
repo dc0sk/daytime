@@ -2,7 +2,7 @@
 name = "daytime-sc20"
 version = "0.2.0"
 description = "Home Assistant integration for the daytime SC20 aquarium LED controller"
-license = "AGPL-3.0-or-later"
+license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.13"
 

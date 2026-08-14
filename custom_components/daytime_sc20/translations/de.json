@@ -164,12 +164,6 @@
       "moonlight_max": {
         "name": "Mondlicht Maximum"
       },
-      "moonlight_start": {
-        "name": "Mondlicht Beginn"
-      },
-      "moonlight_end": {
-        "name": "Mondlicht Ende"
-      },
       "cloud_max_per_day": {
         "name": "Wolken pro Tag"
       },
@@ -226,6 +220,22 @@
       },
       "mesh_clients": {
         "name": "Mesh-Geräte"
+      }
+    },
+    "time": {
+      "moonlight_start": {
+        "name": "Mondlicht Beginn"
+      },
+      "moonlight_end": {
+        "name": "Mondlicht Ende"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      },
+      "webapp": {
+        "name": "Web-App"
       }
     }
   },

@@ -19,8 +19,22 @@ The full protocol reference, including what is proven and what is still a guess,
 | `switch.<tank>_moonlight` | Moonlight simulation |
 | `switch.<tank>_cloud_simulation` | Cloud simulation |
 | `switch.<tank>_acclimatisation` | Acclimatisation ramp for a new tank |
-| `number.<tank>_*` | The effect parameters — moonlight levels and window, cloud frequency, strength and duration, acclimatisation duration and reduction |
+| `number.<tank>_*` | The effect parameters — moonlight levels, cloud frequency, strength and duration, acclimatisation duration and reduction |
+| `time.<tank>_moonlight_start` / `_end` | The moonlight window, as HH:MM clock times |
+| `update.<tank>_firmware` / `_web_app` | Whether the controller has an update waiting |
 | `sensor.<tank>_*` | Current mode, live output level (per channel), programmed level, firmware version, uptime, free memory, operating hours, mesh clients |
+
+## Firmware updates
+
+The controller checks `data.daytime.de` for itself and reports what it finds, so the
+`update` entities surface its own verdict — Home Assistant makes no request to the vendor.
+Firmware and web app are tracked separately because the device updates them independently.
+
+**These report only; they cannot install.** The firmware does expose an over-the-air
+command, but flashing is not something to trigger from an automation: the vendor's own
+updater warns not to use or power-cycle the controller mid-flash, and a failed write leaves
+the tank without light until someone reflashes by hand. Update deliberately, through the
+controller's own page at `http://<host>/update`.
 
 Plus services for the lighting programme: `set_daycycle`, `get_daycycle`, `load_scenario`,
 `save_scenario`, `preview_curve` and `set_clock`.
@@ -175,16 +189,11 @@ this integration assumes the SC20's three-channel model and does not support the
 
 ## Licence
 
-GNU Affero General Public License v3.0 or later — see [`LICENSE`](LICENSE).
+Apache License 2.0 — see [`LICENSE`](LICENSE).
 
-In short: you may use, modify and redistribute this, but derivative works must stay under
-the AGPL and their source must be offered to anyone who uses them, **including over a
-network**. If you run a modified version as part of a service other people interact with,
-they are entitled to its source.
-
-One consequence worth knowing: this licence rules out contributing the integration to Home
-Assistant core, which requires Apache-2.0. It stays a custom integration unless it is
-relicensed.
+Permissive: use, modify and redistribute it, including in closed-source work, provided the
+notice and attribution are kept. This is also the licence Home Assistant core uses, so the
+integration could be proposed upstream.
 
 ## Provenance
 

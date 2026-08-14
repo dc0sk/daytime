@@ -164,12 +164,6 @@
       "moonlight_max": {
         "name": "Moonlight maximum"
       },
-      "moonlight_start": {
-        "name": "Moonlight start"
-      },
-      "moonlight_end": {
-        "name": "Moonlight end"
-      },
       "cloud_max_per_day": {
         "name": "Clouds per day"
       },
@@ -226,6 +220,22 @@
       },
       "mesh_clients": {
         "name": "Mesh clients"
+      }
+    },
+    "time": {
+      "moonlight_start": {
+        "name": "Moonlight start"
+      },
+      "moonlight_end": {
+        "name": "Moonlight end"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      },
+      "webapp": {
+        "name": "Web app"
       }
     }
   },

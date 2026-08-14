@@ -23,7 +23,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import SC20ConfigEntry
 from .api import SC20Client, SC20State
-from .const import DAY_MINUTES_MAX
 from .coordinator import SC20Coordinator
 from .entity import SC20Entity
 
@@ -89,29 +88,6 @@ NUMBERS: tuple[SC20NumberDescription, ...] = (
         value=lambda s: s.moon.maximum if s.moon else None,
         set_value=_moon_setter("maximum"),
     ),
-    SC20NumberDescription(
-        key="moonlight_start",
-        translation_key="moonlight_start",
-        native_min_value=0,
-        native_max_value=DAY_MINUTES_MAX,
-        native_step=10,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        entity_category=EntityCategory.CONFIG,
-        value=lambda s: s.moon.start if s.moon else None,
-        set_value=_moon_setter("start"),
-    ),
-    SC20NumberDescription(
-        key="moonlight_end",
-        translation_key="moonlight_end",
-        native_min_value=0,
-        native_max_value=DAY_MINUTES_MAX,
-        native_step=10,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        entity_category=EntityCategory.CONFIG,
-        value=lambda s: s.moon.end if s.moon else None,
-        set_value=_moon_setter("end"),
-    ),
-    # --- clouds ---
     SC20NumberDescription(
         key="cloud_max_per_day",
         translation_key="cloud_max_per_day",
