@@ -532,9 +532,7 @@ async def test_connection_page_rejects_an_out_of_range_interval(
         )
 
 
-async def test_connection_page_offers_the_current_interval(
-    hass: HomeAssistant, entry
-) -> None:
+async def test_connection_page_offers_the_current_interval(hass: HomeAssistant, entry) -> None:
     config_entry, _ = entry
     hass.config_entries.async_update_entry(config_entry, options={CONF_SCAN_INTERVAL: 45})
     result = await _open(hass, config_entry.entry_id, "connection")
