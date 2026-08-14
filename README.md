@@ -143,9 +143,25 @@ channels. Other members of this hardware family — the aquaLEDs HC and HC+, and
 variants — speak the same protocol but have six channels and a real moonlight channel;
 this integration assumes the SC20's three-channel model and does not support them.
 
-## Licence and provenance
+## Licence
 
-This is unofficial and not affiliated with daytime or aquaLEDs.de UG. The protocol
-documentation in `docs/protocol/` describes an interface recovered by observing a device
-the author owns, for the purpose of interoperability. No vendor firmware or vendor code is
-redistributed here.
+GNU Affero General Public License v3.0 or later — see [`LICENSE`](LICENSE).
+
+In short: you may use, modify and redistribute this, but derivative works must stay under
+the AGPL and their source must be offered to anyone who uses them, **including over a
+network**. If you run a modified version as part of a service other people interact with,
+they are entitled to its source.
+
+One consequence worth knowing: this licence rules out contributing the integration to Home
+Assistant core, which requires Apache-2.0. It stays a custom integration unless it is
+relicensed.
+
+## Provenance
+
+Unofficial, and not affiliated with daytime or aquaLEDs.de UG.
+
+The protocol documentation in `docs/protocol/` describes an interface recovered by
+observing a device the author owns, for the purpose of interoperability. No vendor
+firmware, vendor source or vendor asset is redistributed here — the firmware image is
+referenced by URL only, and the three `.scen` files are the vendor's own public downloads,
+which are plain coordinate lists rather than creative works.
