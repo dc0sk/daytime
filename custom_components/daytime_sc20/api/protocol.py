@@ -42,6 +42,7 @@ from .const import (
     TITLE_PAUSE_ACCLIMATION,
     TITLE_PREVIEW_CURVE,
     TITLE_SET_VALUES,
+    TITLE_START_FOTA,
     TO_ALL_LIGHTS,
     TO_MASTER,
 )
@@ -287,6 +288,18 @@ def build_set_clock(moment: datetime, mode: str = MODE_DAYCYCLE) -> dict[str, An
         "mode": mode,
         "from": FROM_USER,
     }
+
+
+def build_start_firmware_update() -> dict[str, Any]:
+    """Tell the controller to update itself.
+
+    It then downloads from data.daytime.de and reboots — so it needs working internet
+    access, and it will be off the network for a few minutes. There is no way to cancel
+    once this is sent, and a failed write leaves the lamp needing a manual reflash.
+
+    Confirmed from the vendor app, which sends exactly this and nothing else.
+    """
+    return {"title": TITLE_START_FOTA, "to": TO_ALL_LIGHTS, "from": FROM_USER}
 
 
 def build_preview_curve(speed_factor: int, start: int, end: int) -> dict[str, Any]:

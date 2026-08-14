@@ -30,11 +30,20 @@ The controller checks `data.daytime.de` for itself and reports what it finds, so
 `update` entities surface its own verdict — Home Assistant makes no request to the vendor.
 Firmware and web app are tracked separately because the device updates them independently.
 
-**These report only; they cannot install.** The firmware does expose an over-the-air
-command, but flashing is not something to trigger from an automation: the vendor's own
-updater warns not to use or power-cycle the controller mid-flash, and a failed write leaves
-the tank without light until someone reflashes by hand. Update deliberately, through the
-controller's own page at `http://<host>/update`.
+The **Install** button triggers the controller's own updater (`START_FOTA`), which
+downloads from the vendor, flashes and reboots.
+
+> **Read this before pressing it.** The controller is off the network for several minutes,
+> during which the aquarium light is not under control. There is no cancel. If the write
+> fails, the lamp needs a manual reflash through `http://<host>/update` and the tank stays
+> unlit until you do it. Do not power-cycle the controller during an update, and do not put
+> this in an automation — it is a deliberate, supervised action.
+>
+> The button refuses unless the controller is connected and actually reports something
+> newer than it runs, so it will not pointlessly reflash a current device.
+
+The device needs working internet access to fetch the image; it downloads from
+`data.daytime.de` itself.
 
 Plus services for the lighting programme: `set_daycycle`, `get_daycycle`, `load_scenario`,
 `save_scenario`, `preview_curve` and `set_clock`.

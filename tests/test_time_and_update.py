@@ -9,9 +9,10 @@ from unittest.mock import patch
 import pytest
 from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.daytime_sc20.api import SC20State
+from custom_components.daytime_sc20.api import SC20ConnectionError, SC20State
 from custom_components.daytime_sc20.const import DOMAIN
 
 from .test_entities import FakeClient, _state
@@ -211,13 +212,12 @@ async def test_a_failed_upstream_check_does_not_show_a_phantom_downgrade(
     assert firmware.state == STATE_OFF
 
 
-async def test_update_entity_cannot_install(hass: HomeAssistant, setup_entry) -> None:
-    """Flashing a live aquarium controller is not something an automation should trigger."""
+async def test_update_entity_offers_install(hass: HomeAssistant, setup_entry) -> None:
     from homeassistant.components.update import UpdateEntityFeature
 
     await setup_entry()
     firmware = hass.states.get("update.reef_tank_firmware")
-    assert not firmware.attributes["supported_features"] & UpdateEntityFeature.INSTALL
+    assert firmware.attributes["supported_features"] & UpdateEntityFeature.INSTALL
 
 
 async def test_update_entity_points_at_the_devices_own_updater(
@@ -227,3 +227,212 @@ async def test_update_entity_points_at_the_devices_own_updater(
     firmware = hass.states.get("update.reef_tank_firmware")
     assert firmware.attributes["update_via"] == "http://192.168.1.34/update"
     assert firmware.attributes["device_reports_update_available"] is False
+
+
+# --- installing --------------------------------------------------------------------------
+
+
+class UpdatableClient(FakeClient):
+    """Records the update commands and can pretend to reboot onto a new revision."""
+
+    def __init__(self, state: SC20State) -> None:
+        super().__init__(state)
+        #: What the device comes back as, or None to never come back.
+        self.reboots_to: tuple[int, int] | None = None
+
+    async def async_start_firmware_update(self) -> None:
+        self.calls.append(("start_firmware_update", None))
+
+    async def async_wait_for_update(self, previous, **kwargs):
+        self.calls.append(("wait_for_update", previous))
+        if self.reboots_to is None:
+            return False
+        self.state.device_info = dataclasses.replace(
+            self.state.device_info, revision=self.reboots_to
+        )
+        return self.reboots_to != previous
+
+
+@pytest.fixture
+async def updatable(hass: HomeAssistant):
+    async def _setup(
+        latest: tuple[int, int] = (24, 15), reboots_to: tuple[int, int] | None = (24, 15)
+    ) -> tuple[MockConfigEntry, UpdatableClient]:
+        state = _state()
+        state.device_info = dataclasses.replace(
+            state.device_info, latest_revision=latest, firmware_available=latest != (23, 15)
+        )
+        client = UpdatableClient(state)
+        client.reboots_to = reboots_to
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_HOST: "192.168.1.34"},
+            unique_id="AA:BB:CC:DD:EE:FF",
+            title="Reef tank",
+        )
+        entry.add_to_hass(hass)
+        with patch("custom_components.daytime_sc20.SC20Client", return_value=client):
+            assert await hass.config_entries.async_setup(entry.entry_id)
+            await hass.async_block_till_done()
+        return entry, client
+
+    return _setup
+
+
+async def test_install_sends_start_fota_and_waits(hass: HomeAssistant, updatable) -> None:
+    _, client = await updatable()
+
+    await hass.services.async_call(
+        "update",
+        "install",
+        {ATTR_ENTITY_ID: "update.reef_tank_firmware"},
+        blocking=True,
+    )
+
+    names = [name for name, _ in client.calls]
+    assert "start_firmware_update" in names
+    assert "wait_for_update" in names
+    assert names.index("start_firmware_update") < names.index("wait_for_update")
+    # It must wait on the revision the device had *before* the flash.
+    assert client.calls[names.index("wait_for_update")][1] == (23, 15)
+
+
+def _entity(hass: HomeAssistant, entity_id: str):
+    """The live entity object, for testing guards the service layer never reaches."""
+    return hass.data["entity_components"]["update"].get_entity(entity_id)
+
+
+async def test_install_refuses_when_already_current(hass: HomeAssistant, updatable) -> None:
+    """Rewriting identical firmware buys nothing and carries the full risk of a bad write.
+
+    Home Assistant's own update component refuses this first, so the service call fails
+    before reaching our code. What matters is that nothing is flashed either way.
+    """
+    _, client = await updatable(latest=(23, 15))
+
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            "update",
+            "install",
+            {ATTR_ENTITY_ID: "update.reef_tank_firmware"},
+            blocking=True,
+        )
+    assert not any(name == "start_firmware_update" for name, _ in client.calls)
+
+
+async def test_install_guard_refuses_when_already_current(
+    hass: HomeAssistant, updatable
+) -> None:
+    """Our own guard, exercised directly since the service layer short-circuits first.
+
+    Worth having on its own: it is what protects a direct call, and it is the layer that
+    knows this device in particular must not be pointlessly reflashed.
+    """
+    _, client = await updatable(latest=(23, 15))
+
+    with pytest.raises(HomeAssistantError, match="nothing to install"):
+        await _entity(hass, "update.reef_tank_firmware").async_install(None, False)
+    assert not any(name == "start_firmware_update" for name, _ in client.calls)
+
+
+async def test_install_refuses_when_disconnected(hass: HomeAssistant, updatable) -> None:
+    """Starting a flash we cannot watch is worse than not starting it.
+
+    A disconnected client makes the entity unavailable, so the service call finds nothing
+    to act on; the guard below covers the case where it is reached anyway.
+    """
+    _, client = await updatable()
+    client.connected = False
+
+    await hass.services.async_call(
+        "update",
+        "install",
+        {ATTR_ENTITY_ID: "update.reef_tank_firmware"},
+        blocking=True,
+    )
+    assert not any(name == "start_firmware_update" for name, _ in client.calls)
+
+
+async def test_install_guard_refuses_when_disconnected(hass: HomeAssistant, updatable) -> None:
+    _, client = await updatable()
+    client.connected = False
+
+    with pytest.raises(HomeAssistantError, match="Not connected"):
+        await _entity(hass, "update.reef_tank_firmware").async_install(None, False)
+    assert not any(name == "start_firmware_update" for name, _ in client.calls)
+
+
+async def test_install_reports_when_the_device_does_not_come_back(
+    hass: HomeAssistant, updatable
+) -> None:
+    """A timeout is 'we stopped watching', not 'it failed' — and must not be silent."""
+    _, client = await updatable(reboots_to=None)
+
+    with pytest.raises(HomeAssistantError, match="did not report a new version"):
+        await hass.services.async_call(
+            "update",
+            "install",
+            {ATTR_ENTITY_ID: "update.reef_tank_firmware"},
+            blocking=True,
+        )
+    # It did start, so the message must not suggest nothing happened.
+    assert any(name == "start_firmware_update" for name, _ in client.calls)
+
+
+async def test_in_progress_is_cleared_when_the_device_never_returns(
+    hass: HomeAssistant, updatable
+) -> None:
+    """A stuck 'installing' state would hide the entity's real status indefinitely."""
+    _, _ = await updatable(reboots_to=None)
+
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            "update",
+            "install",
+            {ATTR_ENTITY_ID: "update.reef_tank_firmware"},
+            blocking=True,
+        )
+
+    assert hass.states.get("update.reef_tank_firmware").attributes["in_progress"] is False
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [SC20ConnectionError("socket died"), RuntimeError("something unforeseen")],
+    ids=["connection-error", "unexpected-error"],
+)
+async def test_in_progress_is_cleared_when_the_wait_itself_blows_up(
+    hass: HomeAssistant, updatable, failure: Exception
+) -> None:
+    """The clear must be in a finally, or an exception mid-flash strands the entity.
+
+    Distinct from the timeout case above: that one returns normally and clears on the way
+    out regardless. Only a raise from inside the try proves the finally is doing work.
+    """
+    _, client = await updatable()
+
+    async def boom(previous, **kwargs):
+        raise failure
+
+    client.async_wait_for_update = boom
+
+    with pytest.raises((HomeAssistantError, RuntimeError)):
+        await hass.services.async_call(
+            "update",
+            "install",
+            {ATTR_ENTITY_ID: "update.reef_tank_firmware"},
+            blocking=True,
+        )
+
+    assert hass.states.get("update.reef_tank_firmware").attributes["in_progress"] is False
+
+
+async def test_install_updates_the_reported_version(hass: HomeAssistant, updatable) -> None:
+    _, _ = await updatable()
+    await hass.services.async_call(
+        "update", "install", {ATTR_ENTITY_ID: "update.reef_tank_firmware"}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert (
+        hass.states.get("update.reef_tank_firmware").attributes["installed_version"] == "02.4"
+    )

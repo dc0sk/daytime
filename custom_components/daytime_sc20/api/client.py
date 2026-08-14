@@ -497,6 +497,67 @@ class SC20Client:
         """Push a wall-clock time to the device, preserving its current mode."""
         await self._send(protocol.build_set_clock(moment, mode=self.state.mode))
 
+    async def async_start_firmware_update(self) -> None:
+        """Tell the controller to update itself, and return immediately.
+
+        The device then downloads from data.daytime.de, flashes, and reboots — so it drops
+        off the network for a few minutes. Use `async_wait_for_update` to follow it back.
+
+        There is no cancel. A failed flash leaves the lamp needing a manual reflash through
+        its own web page, and the aquarium unlit until then.
+        """
+        _LOGGER.warning(
+            "starting a firmware update on %s — it will reboot and be unreachable for "
+            "several minutes; do not power-cycle it",
+            self.host,
+        )
+        await self._send(protocol.build_start_firmware_update())
+
+    async def async_wait_for_update(
+        self, previous: tuple[int, int], *, timeout: float = 420.0, poll: float = 10.0
+    ) -> bool:
+        """Follow the device through a reboot, returning whether its revision changed.
+
+        `previous` is the revision pair from before the update started. The reader task
+        reconnects on its own, so this just waits for the socket to come back and then
+        re-reads USRDTA until the revision moves.
+
+        Returns False on timeout rather than raising: a timeout means "we stopped
+        watching", not "the update failed", and the difference matters when the thing on
+        the other end is someone's aquarium light.
+        """
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout
+        # Give it a moment to actually go away, so a stale pre-reboot read is not mistaken
+        # for a finished update.
+        await asyncio.sleep(poll)
+
+        while loop.time() < deadline:
+            if self.connected:
+                try:
+                    frame = await self._request("GET_USRDTA", timeout=poll)
+                    info = protocol.parse_device_info(frame)
+                except (SC20Timeout, SC20ConnectionError, SC20ProtocolError):
+                    pass
+                else:
+                    self.state.device_info = info
+                    if info.revision != previous:
+                        _LOGGER.info(
+                            "%s came back on revision %s (was %s)",
+                            self.host,
+                            info.revision,
+                            previous,
+                        )
+                        return True
+            await asyncio.sleep(poll)
+
+        _LOGGER.warning(
+            "%s did not report a new revision within %.0fs; check it directly",
+            self.host,
+            timeout,
+        )
+        return False
+
     async def async_preview_curve(self, speed_factor: int, start: int, end: int) -> None:
         """Fast-forward the programmed curve as a demo. Ends with `async_set_mode(False)`."""
         await self._send(protocol.build_preview_curve(speed_factor, start, end))

@@ -84,6 +84,11 @@ TITLE_PAUSE_ACCLIMATION: Final = "PAUSE_ACCLIMATION"
 TITLE_PREVIEW_CURVE: Final = "PREV-CRV"
 TITLE_PREVIEW_POINT: Final = "PREV-PNT"
 
+#: Starts the controller's own over-the-air updater, which then fetches from
+#: data.daytime.de and reboots. Confirmed from the vendor app: `startUpdate()` sends exactly
+#: `{title:"START_FOTA", to:"ALL-LIGHTS"}`.
+TITLE_START_FOTA: Final = "START_FOTA"
+
 #: The two modes are mutually exclusive; a lamp is always in exactly one.
 MODE_MANUAL: Final = TITLE_MANUAL_MODE
 MODE_DAYCYCLE: Final = TITLE_DAYCYCLE_MODE
