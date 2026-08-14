@@ -1,7 +1,9 @@
 {
   "domain": "daytime_sc20",
   "name": "daytime SC20",
-  "codeowners": [],
+  "codeowners": [
+    "@dc0sk"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/dc0sk/daytime",
   "integration_type": "device",
