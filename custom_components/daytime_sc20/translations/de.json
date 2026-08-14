@@ -1,0 +1,142 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "daytime SC20",
+        "description": "Gib die Adresse deines SC20-Controllers ein. Benutzername und Passwort sind nicht nötig — das Gerät hat überhaupt keine Authentifizierung, jeder im Netzwerk kann es steuern.",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "IP-Adresse oder Hostname des Controllers, zum Beispiel 192.168.1.34 oder sc20.local"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unter dieser Adresse hat kein SC20 geantwortet. Prüfe, ob er eingeschaltet und im selben Netzwerk ist.",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "already_configured": "Dieser Controller ist bereits eingerichtet"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optionen",
+        "data": {
+          "scan_interval": "Aktualisierungsintervall"
+        },
+        "data_description": {
+          "scan_interval": "Wie oft die aktuellen Helligkeiten gelesen werden, in Sekunden. Der Controller ist ein kleines Gerät mit wenig Speicher — kurze Intervalle folgen der Wolkensimulation genauer, belasten ihn aber stärker."
+        }
+      }
+    }
+  },
+  "entity": {
+    "light": {
+      "channel_white": { "name": "Weiß" },
+      "channel_blue": { "name": "Blau" },
+      "channel_red": { "name": "Rot" }
+    },
+    "select": {
+      "mode": {
+        "name": "Modus",
+        "state": {
+          "daycycle": "Tagesverlauf",
+          "manual": "Manuell"
+        }
+      }
+    },
+    "switch": {
+      "moonlight": { "name": "Mondlicht" },
+      "cloud_simulation": { "name": "Wolkensimulation" },
+      "acclimatisation": { "name": "Eingewöhnung" },
+      "acclimatisation_pause": { "name": "Eingewöhnung pausiert" }
+    },
+    "number": {
+      "moonlight_min": { "name": "Mondlicht Minimum" },
+      "moonlight_max": { "name": "Mondlicht Maximum" },
+      "moonlight_start": { "name": "Mondlicht Beginn" },
+      "moonlight_end": { "name": "Mondlicht Ende" },
+      "cloud_max_per_day": { "name": "Wolken pro Tag" },
+      "cloud_probability": { "name": "Wolkenwahrscheinlichkeit" },
+      "cloud_min_intensity": { "name": "Wolkenstärke Minimum" },
+      "cloud_max_intensity": { "name": "Wolkenstärke Maximum" },
+      "cloud_min_duration": { "name": "Wolkendauer Minimum" },
+      "cloud_max_duration": { "name": "Wolkendauer Maximum" },
+      "acclimatisation_duration": { "name": "Eingewöhnungsdauer" },
+      "acclimatisation_reduction": { "name": "Eingewöhnung Reduzierung" }
+    },
+    "sensor": {
+      "mode_sensor": {
+        "name": "Modus",
+        "state": {
+          "daycycle": "Tagesverlauf",
+          "manual": "Manuell"
+        }
+      },
+      "output_level": { "name": "Aktuelle Helligkeit" },
+      "programmed_level": { "name": "Programmierte Helligkeit" },
+      "acclimatisation_day": { "name": "Eingewöhnungstag" },
+      "firmware_version": { "name": "Firmware-Version" },
+      "free_heap": { "name": "Freier Speicher" },
+      "uptime": { "name": "Betriebszeit" },
+      "operating_hours": { "name": "Betriebsstunden" },
+      "mesh_clients": { "name": "Mesh-Geräte" }
+    }
+  },
+  "services": {
+    "set_daycycle": {
+      "name": "Tagesverlauf setzen",
+      "description": "Ersetzt das Lichtprogramm. Das bisherige Programm wird vorher gesichert, denn der Controller kennt kein Rückgängig.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Auf welchen SC20 geschrieben wird." },
+        "setpoints": {
+          "name": "Stützpunkte",
+          "description": "Eine Liste aus [Minute, Weiß, Blau, Rot]-Zeilen. Die Minute ist 0-1440 ab Mitternacht, die Werte sind Prozent. Höchstens 30 Zeilen, nach Zeit sortiert, beginnend bei Minute 0 und endend bei Minute 1440."
+        }
+      }
+    },
+    "get_daycycle": {
+      "name": "Tagesverlauf lesen",
+      "description": "Liest das aktuelle Lichtprogramm — als Liste von Stützpunkten und als Inhalt einer .scen-Datei.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Von welchem SC20 gelesen wird." }
+      }
+    },
+    "load_scenario": {
+      "name": "Szenario-Datei laden",
+      "description": "Lädt eine .scen-Datei als Lichtprogramm hoch. Das bisherige Programm wird vorher gesichert.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Auf welchen SC20 geschrieben wird." },
+        "filename": { "name": "Datei", "description": "Pfad zur .scen-Datei. Sie muss in einem Verzeichnis liegen, das Home Assistant lesen darf." }
+      }
+    },
+    "save_scenario": {
+      "name": "Szenario-Datei speichern",
+      "description": "Schreibt das aktuelle Lichtprogramm in eine .scen-Datei, im selben Format wie die Hersteller-App.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Von welchem SC20 gelesen wird." },
+        "filename": { "name": "Datei", "description": "Wohin die .scen-Datei geschrieben wird. Der Ort muss in einem Verzeichnis liegen, das Home Assistant beschreiben darf." }
+      }
+    },
+    "preview_curve": {
+      "name": "Tagesverlauf vorführen",
+      "description": "Spielt das gespeicherte Programm im Zeitraffer ab. Zum Beenden den Modus wieder auf Tagesverlauf stellen.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Auf welchem SC20 die Vorschau läuft." },
+        "speed_factor": { "name": "Geschwindigkeit", "description": "Wie viel schneller als in Echtzeit abgespielt wird. 100 zeigt einen ganzen Tag in etwa fünfzehn Minuten." },
+        "start_time": { "name": "Beginn", "description": "Minute des Tages, ab der abgespielt wird." },
+        "end_time": { "name": "Ende", "description": "Minute des Tages, bis zu der abgespielt wird." }
+      }
+    },
+    "set_clock": {
+      "name": "Uhr stellen",
+      "description": "Stellt die Uhr des Controllers auf die Ortszeit von Home Assistant. Der Tagesverlauf richtet sich nach dieser Uhr — geht sie falsch, verschiebt sich der ganze Lichttag.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Welcher SC20 gestellt wird." }
+      }
+    }
+  }
+}

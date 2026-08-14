@@ -1,0 +1,142 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "daytime SC20",
+        "description": "Enter the address of your SC20 controller. It needs no username or password — the device has no authentication at all, so anyone on your network can control it.",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "The IP address or hostname of the controller, for example 192.168.1.34 or sc20.local"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No SC20 answered at that address. Check that it is powered on and on the same network.",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This controller is already set up"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "scan_interval": "Update interval"
+        },
+        "data_description": {
+          "scan_interval": "How often to read the live light levels, in seconds. The controller is a small device with little memory — short intervals track cloud simulation more closely but load it harder."
+        }
+      }
+    }
+  },
+  "entity": {
+    "light": {
+      "channel_white": { "name": "White" },
+      "channel_blue": { "name": "Blue" },
+      "channel_red": { "name": "Red" }
+    },
+    "select": {
+      "mode": {
+        "name": "Mode",
+        "state": {
+          "daycycle": "Daycycle",
+          "manual": "Manual"
+        }
+      }
+    },
+    "switch": {
+      "moonlight": { "name": "Moonlight" },
+      "cloud_simulation": { "name": "Cloud simulation" },
+      "acclimatisation": { "name": "Acclimatisation" },
+      "acclimatisation_pause": { "name": "Acclimatisation paused" }
+    },
+    "number": {
+      "moonlight_min": { "name": "Moonlight minimum" },
+      "moonlight_max": { "name": "Moonlight maximum" },
+      "moonlight_start": { "name": "Moonlight start" },
+      "moonlight_end": { "name": "Moonlight end" },
+      "cloud_max_per_day": { "name": "Clouds per day" },
+      "cloud_probability": { "name": "Cloud probability" },
+      "cloud_min_intensity": { "name": "Cloud minimum strength" },
+      "cloud_max_intensity": { "name": "Cloud maximum strength" },
+      "cloud_min_duration": { "name": "Cloud minimum duration" },
+      "cloud_max_duration": { "name": "Cloud maximum duration" },
+      "acclimatisation_duration": { "name": "Acclimatisation duration" },
+      "acclimatisation_reduction": { "name": "Acclimatisation reduction" }
+    },
+    "sensor": {
+      "mode_sensor": {
+        "name": "Mode",
+        "state": {
+          "daycycle": "Daycycle",
+          "manual": "Manual"
+        }
+      },
+      "output_level": { "name": "Output level" },
+      "programmed_level": { "name": "Programmed level" },
+      "acclimatisation_day": { "name": "Acclimatisation day" },
+      "firmware_version": { "name": "Firmware version" },
+      "free_heap": { "name": "Free memory" },
+      "uptime": { "name": "Uptime" },
+      "operating_hours": { "name": "Operating hours" },
+      "mesh_clients": { "name": "Mesh clients" }
+    }
+  },
+  "services": {
+    "set_daycycle": {
+      "name": "Set daycycle",
+      "description": "Replace the lighting programme. The previous programme is backed up first, because the controller has no undo.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Which SC20 to write to." },
+        "setpoints": {
+          "name": "Setpoints",
+          "description": "A list of [minute, white, blue, red] rows. Minute is 0-1440 from midnight, the levels are percentages. Up to 30 rows, sorted by time, starting at minute 0 and ending at minute 1440."
+        }
+      }
+    },
+    "get_daycycle": {
+      "name": "Get daycycle",
+      "description": "Read the current lighting programme, both as a list of setpoints and as the contents of a .scen file.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Which SC20 to read from." }
+      }
+    },
+    "load_scenario": {
+      "name": "Load scenario file",
+      "description": "Upload a .scen scenario file as the lighting programme. The previous programme is backed up first.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Which SC20 to write to." },
+        "filename": { "name": "File", "description": "Path to the .scen file. It must be inside a directory Home Assistant is allowed to read." }
+      }
+    },
+    "save_scenario": {
+      "name": "Save scenario file",
+      "description": "Write the current lighting programme to a .scen file, in the same format the vendor app uses.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Which SC20 to read from." },
+        "filename": { "name": "File", "description": "Where to write the .scen file. It must be inside a directory Home Assistant is allowed to write." }
+      }
+    },
+    "preview_curve": {
+      "name": "Preview daycycle",
+      "description": "Play the stored programme back at speed as a demonstration. Set the mode back to Daycycle to stop it.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Which SC20 to run the preview on." },
+        "speed_factor": { "name": "Speed", "description": "How much faster than real time to play. 100 runs a whole day in about fifteen minutes." },
+        "start_time": { "name": "Start", "description": "Minute of the day to start from." },
+        "end_time": { "name": "End", "description": "Minute of the day to stop at." }
+      }
+    },
+    "set_clock": {
+      "name": "Sync clock",
+      "description": "Set the controller's clock from Home Assistant's local time. The schedule runs off this clock, so drift shifts your whole lighting day.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Which SC20 to set." }
+      }
+    }
+  }
+}

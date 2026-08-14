@@ -1,0 +1,85 @@
+set_daycycle:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: daytime_sc20
+    setpoints:
+      required: true
+      example: "[[0,0,0,0],[420,0,0,0],[480,90,90,90],[1200,90,90,90],[1320,0,0,0],[1440,0,0,0]]"
+      selector:
+        object:
+
+get_daycycle:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: daytime_sc20
+
+load_scenario:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: daytime_sc20
+    filename:
+      required: true
+      example: "/config/scenarios/freshwater-2-daycycle.scen"
+      selector:
+        text:
+
+save_scenario:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: daytime_sc20
+    filename:
+      required: true
+      example: "/config/scenarios/backup.scen"
+      selector:
+        text:
+
+preview_curve:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: daytime_sc20
+    speed_factor:
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 1000
+          mode: box
+    start_time:
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 1440
+          unit_of_measurement: min
+          mode: box
+    end_time:
+      default: 1440
+      selector:
+        number:
+          min: 0
+          max: 1440
+          unit_of_measurement: min
+          mode: box
+
+set_clock:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: daytime_sc20
