@@ -1,0 +1,25 @@
+[project]
+name = "daytime-sc20"
+version = "0.1.0"
+description = "Home Assistant integration for the daytime SC20 aquarium LED controller"
+requires-python = ">=3.13"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+
+[tool.ruff]
+line-length = 96
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+  # Home Assistant entity descriptions and platform setups take arguments positionally in
+  # ways these rules dislike, and the pattern is the framework's, not ours.
+  "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]

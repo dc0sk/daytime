@@ -1,0 +1,151 @@
+{
+  "host": "0.0.0.0",
+  "serverLog": {
+    "uptime_minutes": 6658,
+    "free_heap": 26600,
+    "operating_hours": 951240,
+    "firmware_version": 23,
+    "webapp_version": 23
+  },
+  "snapshot": {
+    "DYCL": {
+      "title": "DYCL",
+      "from": "AA:BB:CC:DD:EE:FF",
+      "configuration": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          360,
+          0,
+          0,
+          0
+        ],
+        [
+          480,
+          90,
+          90,
+          90
+        ],
+        [
+          1200,
+          90,
+          90,
+          90
+        ],
+        [
+          1320,
+          0,
+          0,
+          0
+        ],
+        [
+          1440,
+          0,
+          0,
+          0
+        ]
+      ],
+      "to": "USER"
+    },
+    "DSCRPTN": {
+      "title": "DSCRPTN",
+      "from": "AA:BB:CC:DD:EE:FF",
+      "description": "confId:-1;expMode:false;start:360;end:1320;sunrise:120;sunset:120;intensity:90;individual:false;intensities:85,85,85",
+      "to": "USER"
+    },
+    "MOON": {
+      "title": "MOON",
+      "from": "AA:BB:CC:DD:EE:FF",
+      "maxmoonlight": 30,
+      "minmoonlight": 2,
+      "moonlightActive": 0,
+      "moonlightCycle": 1,
+      "color": "b",
+      "moonStart": 1320,
+      "moonEnd": 360,
+      "to": "USER"
+    },
+    "CLOUD": {
+      "title": "CLOUD",
+      "from": "AA:BB:CC:DD:EE:FF",
+      "probability": 65,
+      "maxAmount": 150,
+      "minIntensity": 60,
+      "maxIntensity": 100,
+      "minDuration": 600,
+      "maxDuration": 1500,
+      "cloudActive": 1,
+      "mode": 0,
+      "to": "USER"
+    },
+    "ACCLIMATE": {
+      "title": "ACCLIMATE",
+      "from": "AA:BB:CC:DD:EE:FF",
+      "duration": 30,
+      "intensityReduction": 50,
+      "currentAcclDay": 0,
+      "acclActive": 0,
+      "pause": 0,
+      "to": "USER"
+    },
+    "CCV": {
+      "title": "CCV",
+      "from": "AA:BB:CC:DD:EE:FF",
+      "currentValues": [
+        90,
+        90,
+        90
+      ],
+      "to": "USER"
+    },
+    "USRDTA": {
+      "title": "USRDTA",
+      "from": "AA:BB:CC:DD:EE:FF",
+      "name": "SC20_0000000",
+      "aqName": "<redacted>",
+      "mode": "DAYCL_MODE",
+      "version": 4,
+      "language": "DE",
+      "timezone": 60,
+      "tID": 30,
+      "dst": 1,
+      "tankconfig": "DAYTIME",
+      "power": "17",
+      "netmode": "ST",
+      "host": "sc20",
+      "groupID": 0,
+      "meshing": 1,
+      "firstStart": 0,
+      "remote": 0,
+      "revision": [
+        23,
+        15
+      ],
+      "latestAvailableRevision": [
+        23,
+        15
+      ],
+      "firmwareAvailable": 0,
+      "emailAddr": "<redacted>",
+      "liveTime": 951240,
+      "usrName": "<redacted>",
+      "to": "USER"
+    },
+    "CLOCK": {
+      "title": "CLOCK",
+      "from": "AA:BB:CC:DD:EE:FF",
+      "year": 2026,
+      "month": 8,
+      "day": 14,
+      "hour": 10,
+      "min": 33,
+      "sec": 17,
+      "mode": "DAYCL_MODE",
+      "to": "USER"
+    }
+  }
+}
