@@ -147,3 +147,37 @@ async def test_server_log_scraping_works_on_real_hardware(
     assert log.free_heap and log.free_heap > 0
     assert log.uptime_minutes is not None
     print(f"\n  heap {log.free_heap} B, up {log.uptime_minutes} min, {log.operating_hours} h")
+
+
+async def test_config_frontend_prefills_from_real_hardware(
+    hass: HomeAssistant, live_entry
+) -> None:
+    """Open every configuration page against the device and check it reflects reality.
+
+    Read-only: each page is opened and its defaults inspected, never submitted.
+    """
+    from custom_components.daytime_sc20.api import protocol
+
+    state = live_entry.runtime_data.client.state
+
+    result = await hass.config_entries.options.async_init(live_entry.entry_id)
+    assert result["type"].value == "menu"
+
+    for step in ("daycycle", "moonlight", "clouds", "acclimatisation", "connection"):
+        opened = await hass.config_entries.options.async_init(live_entry.entry_id)
+        page = await hass.config_entries.options.async_configure(
+            opened["flow_id"], {"next_step_id": step}
+        )
+        assert page["type"].value == "form", f"{step} did not open: {page}"
+        defaults = {str(k): k.default() for k in page["data_schema"].schema}
+        print(f"\n  {step}: {defaults}")
+
+    # The daycycle page must describe the schedule the lamp is actually running: feeding
+    # its own description back through the generator has to reproduce its own DYCL.
+    assert state.description is not None
+    if not state.description.expert_mode:
+        regenerated = state.description.to_daycycle()
+        assert [[p.minute, *p.values] for p in regenerated.setpoints] == [
+            [p.minute, *p.values] for p in state.daycycle.setpoints
+        ], "the easy-mode form would not round-trip this device's schedule"
+        protocol.validate_daycycle(regenerated)

@@ -23,21 +23,116 @@
   "options": {
     "step": {
       "init": {
-        "title": "Optionen",
+        "title": "daytime SC20",
+        "description": "Diese Seiten folgen der Weboberfläche des Controllers. Alles außer Verbindung wird auf der Leuchte selbst gespeichert, nicht in Home Assistant.",
+        "menu_options": {
+          "daycycle": "Tagesverlauf",
+          "moonlight": "Mondlicht",
+          "clouds": "Wolkensimulation",
+          "acclimatisation": "Eingewöhnung",
+          "connection": "Verbindung"
+        }
+      },
+      "daycycle": {
+        "title": "Tagesverlauf",
+        "description": "Der Lichttag: dunkel bis zum Beginn, dann über die Sonnenaufgangsdauer hochblenden, halten, und über die Sonnenuntergangsdauer wieder abblenden, bis es am Ende dunkel ist.\n\nBeim Speichern wird das gesamte Programm auf dem Controller ersetzt. Das bisherige wird vorher gesichert — das Gerät kennt kein Rückgängig.\n\n{expert_warning}",
+        "data": {
+          "start": "Tag beginnt",
+          "end": "Tag endet",
+          "sunrise": "Dauer Sonnenaufgang",
+          "sunset": "Dauer Sonnenuntergang",
+          "brightness": "Helligkeit",
+          "individual": "Helligkeit je Lichtfarbe",
+          "level_white": "Weiß",
+          "level_blue": "Blau",
+          "level_red": "Rot"
+        },
+        "data_description": {
+          "sunrise": "Wie lange das Licht nach Tagesbeginn braucht, um die volle Helligkeit zu erreichen.",
+          "sunset": "Wie lange das Licht vor Tagesende zum Ausblenden braucht.",
+          "individual": "Ist dies aus, gilt die Helligkeit oben für alle drei Kanäle und die Werte je Farbe werden ignoriert."
+        }
+      },
+      "moonlight": {
+        "title": "Mondlicht",
+        "description": "Nachtbeleuchtung zwischen den beiden Zeiten. Das Fenster darf über Mitternacht laufen — ein Ende vor dem Beginn ist normal.",
+        "data": {
+          "active": "Mondlicht",
+          "lunar_cycle": "Mondzyklus nachbilden",
+          "min_level": "Helligkeit bei Neumond",
+          "max_level": "Helligkeit bei Vollmond",
+          "color": "Farben",
+          "start": "Beginn",
+          "end": "Ende"
+        },
+        "data_description": {
+          "lunar_cycle": "Ist dies aus, wird jede Nacht die Vollmond-Helligkeit verwendet. Ist es an, steigt und fällt die Helligkeit über einen 30-Tage-Zyklus.",
+          "color": "Welche Kanäle das Mondlicht tragen. Mindestens einer ist nötig."
+        }
+      },
+      "clouds": {
+        "title": "Wolkensimulation",
+        "description": "Zufälliges Abdunkeln über den Tag, wie vorbeiziehende Wolken.",
+        "data": {
+          "active": "Wolkensimulation",
+          "max_per_day": "Maximale Anzahl an Wolken pro Tag",
+          "min_duration": "Kürzeste Wolke",
+          "max_duration": "Längste Wolke",
+          "min_level": "Schwächste Wolke",
+          "max_level": "Stärkste Wolke",
+          "probability": "Wahrscheinlichkeit"
+        },
+        "data_description": {
+          "min_level": "Wie stark eine Wolke das Licht abdunkelt. 0 % ist gar keine Abdunklung, 100 % ist völlig dunkel.",
+          "probability": "Die Chance, dass eine vorgesehene Wolke tatsächlich erscheint. 100 % heißt, jede erscheint."
+        }
+      },
+      "acclimatisation": {
+        "title": "Eingewöhnung",
+        "description": "Steigert das Licht über die ersten Wochen eines neuen Beckens allmählich von reduziert auf voll.\n\nDer Controller ist derzeit bei Tag {current_day}.",
+        "data": {
+          "active": "Eingewöhnung",
+          "paused": "Pausiert",
+          "duration_days": "Dauer",
+          "reduction": "Anfängliche Reduzierung"
+        },
+        "data_description": {
+          "reduction": "Wie weit das Licht am ersten Tag unter dem Programm gehalten wird."
+        }
+      },
+      "connection": {
+        "title": "Verbindung",
+        "description": "Die einzige Einstellung hier, die in Home Assistant statt auf der Leuchte gespeichert wird.",
         "data": {
           "scan_interval": "Aktualisierungsintervall"
         },
         "data_description": {
-          "scan_interval": "Wie oft die aktuellen Helligkeiten gelesen werden, in Sekunden. Der Controller ist ein kleines Gerät mit wenig Speicher — kurze Intervalle folgen der Wolkensimulation genauer, belasten ihn aber stärker."
+          "scan_interval": "Wie oft die aktuellen Helligkeiten gelesen werden. Der Controller ist ein kleines Gerät mit wenig Speicher — kurze Intervalle folgen der Wolkensimulation genauer, belasten ihn aber stärker."
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Der Controller hat die Änderung nicht angenommen. Möglicherweise ist er offline.",
+      "invalid_daycycle": "Diese Zeiten ergeben keinen brauchbaren Tag. Sonnenaufgang und Sonnenuntergang zusammen müssen zwischen Beginn und Ende passen.",
+      "min_above_max": "Der Minimalwert darf nicht größer als der Maximalwert sein.",
+      "not_loaded": "Die Integration ist nicht geladen."
+    },
+    "abort": {
+      "not_loaded": "Die Integration ist nicht geladen. Lade sie neu und versuche es erneut.",
+      "no_data": "Diese Einstellungen wurden noch nicht vom Controller gelesen. Versuche es gleich noch einmal."
     }
   },
   "entity": {
     "light": {
-      "channel_white": { "name": "Weiß" },
-      "channel_blue": { "name": "Blau" },
-      "channel_red": { "name": "Rot" }
+      "channel_white": {
+        "name": "Weiß"
+      },
+      "channel_blue": {
+        "name": "Blau"
+      },
+      "channel_red": {
+        "name": "Rot"
+      }
     },
     "select": {
       "mode": {
@@ -49,24 +144,56 @@
       }
     },
     "switch": {
-      "moonlight": { "name": "Mondlicht" },
-      "cloud_simulation": { "name": "Wolkensimulation" },
-      "acclimatisation": { "name": "Eingewöhnung" },
-      "acclimatisation_pause": { "name": "Eingewöhnung pausiert" }
+      "moonlight": {
+        "name": "Mondlicht"
+      },
+      "cloud_simulation": {
+        "name": "Wolkensimulation"
+      },
+      "acclimatisation": {
+        "name": "Eingewöhnung"
+      },
+      "acclimatisation_pause": {
+        "name": "Eingewöhnung pausiert"
+      }
     },
     "number": {
-      "moonlight_min": { "name": "Mondlicht Minimum" },
-      "moonlight_max": { "name": "Mondlicht Maximum" },
-      "moonlight_start": { "name": "Mondlicht Beginn" },
-      "moonlight_end": { "name": "Mondlicht Ende" },
-      "cloud_max_per_day": { "name": "Wolken pro Tag" },
-      "cloud_probability": { "name": "Wolkenwahrscheinlichkeit" },
-      "cloud_min_intensity": { "name": "Wolkenstärke Minimum" },
-      "cloud_max_intensity": { "name": "Wolkenstärke Maximum" },
-      "cloud_min_duration": { "name": "Wolkendauer Minimum" },
-      "cloud_max_duration": { "name": "Wolkendauer Maximum" },
-      "acclimatisation_duration": { "name": "Eingewöhnungsdauer" },
-      "acclimatisation_reduction": { "name": "Eingewöhnung Reduzierung" }
+      "moonlight_min": {
+        "name": "Mondlicht Minimum"
+      },
+      "moonlight_max": {
+        "name": "Mondlicht Maximum"
+      },
+      "moonlight_start": {
+        "name": "Mondlicht Beginn"
+      },
+      "moonlight_end": {
+        "name": "Mondlicht Ende"
+      },
+      "cloud_max_per_day": {
+        "name": "Wolken pro Tag"
+      },
+      "cloud_probability": {
+        "name": "Wolkenwahrscheinlichkeit"
+      },
+      "cloud_min_intensity": {
+        "name": "Wolkenstärke Minimum"
+      },
+      "cloud_max_intensity": {
+        "name": "Wolkenstärke Maximum"
+      },
+      "cloud_min_duration": {
+        "name": "Wolkendauer Minimum"
+      },
+      "cloud_max_duration": {
+        "name": "Wolkendauer Maximum"
+      },
+      "acclimatisation_duration": {
+        "name": "Eingewöhnungsdauer"
+      },
+      "acclimatisation_reduction": {
+        "name": "Eingewöhnung Reduzierung"
+      }
     },
     "sensor": {
       "mode_sensor": {
@@ -76,14 +203,30 @@
           "manual": "Manuell"
         }
       },
-      "output_level": { "name": "Aktuelle Helligkeit" },
-      "programmed_level": { "name": "Programmierte Helligkeit" },
-      "acclimatisation_day": { "name": "Eingewöhnungstag" },
-      "firmware_version": { "name": "Firmware-Version" },
-      "free_heap": { "name": "Freier Speicher" },
-      "uptime": { "name": "Betriebszeit" },
-      "operating_hours": { "name": "Betriebsstunden" },
-      "mesh_clients": { "name": "Mesh-Geräte" }
+      "output_level": {
+        "name": "Aktuelle Helligkeit"
+      },
+      "programmed_level": {
+        "name": "Programmierte Helligkeit"
+      },
+      "acclimatisation_day": {
+        "name": "Eingewöhnungstag"
+      },
+      "firmware_version": {
+        "name": "Firmware-Version"
+      },
+      "free_heap": {
+        "name": "Freier Speicher"
+      },
+      "uptime": {
+        "name": "Betriebszeit"
+      },
+      "operating_hours": {
+        "name": "Betriebsstunden"
+      },
+      "mesh_clients": {
+        "name": "Mesh-Geräte"
+      }
     }
   },
   "services": {
@@ -91,7 +234,10 @@
       "name": "Tagesverlauf setzen",
       "description": "Ersetzt das Lichtprogramm. Das bisherige Programm wird vorher gesichert, denn der Controller kennt kein Rückgängig.",
       "fields": {
-        "config_entry_id": { "name": "Controller", "description": "Auf welchen SC20 geschrieben wird." },
+        "config_entry_id": {
+          "name": "Controller",
+          "description": "Auf welchen SC20 geschrieben wird."
+        },
         "setpoints": {
           "name": "Stützpunkte",
           "description": "Eine Liste aus [Minute, Weiß, Blau, Rot]-Zeilen. Die Minute ist 0-1440 ab Mitternacht, die Werte sind Prozent. Höchstens 30 Zeilen, nach Zeit sortiert, beginnend bei Minute 0 und endend bei Minute 1440."
@@ -102,40 +248,79 @@
       "name": "Tagesverlauf lesen",
       "description": "Liest das aktuelle Lichtprogramm — als Liste von Stützpunkten und als Inhalt einer .scen-Datei.",
       "fields": {
-        "config_entry_id": { "name": "Controller", "description": "Von welchem SC20 gelesen wird." }
+        "config_entry_id": {
+          "name": "Controller",
+          "description": "Von welchem SC20 gelesen wird."
+        }
       }
     },
     "load_scenario": {
       "name": "Szenario-Datei laden",
       "description": "Lädt eine .scen-Datei als Lichtprogramm hoch. Das bisherige Programm wird vorher gesichert.",
       "fields": {
-        "config_entry_id": { "name": "Controller", "description": "Auf welchen SC20 geschrieben wird." },
-        "filename": { "name": "Datei", "description": "Pfad zur .scen-Datei. Sie muss in einem Verzeichnis liegen, das Home Assistant lesen darf." }
+        "config_entry_id": {
+          "name": "Controller",
+          "description": "Auf welchen SC20 geschrieben wird."
+        },
+        "filename": {
+          "name": "Datei",
+          "description": "Pfad zur .scen-Datei. Sie muss in einem Verzeichnis liegen, das Home Assistant lesen darf."
+        }
       }
     },
     "save_scenario": {
       "name": "Szenario-Datei speichern",
       "description": "Schreibt das aktuelle Lichtprogramm in eine .scen-Datei, im selben Format wie die Hersteller-App.",
       "fields": {
-        "config_entry_id": { "name": "Controller", "description": "Von welchem SC20 gelesen wird." },
-        "filename": { "name": "Datei", "description": "Wohin die .scen-Datei geschrieben wird. Der Ort muss in einem Verzeichnis liegen, das Home Assistant beschreiben darf." }
+        "config_entry_id": {
+          "name": "Controller",
+          "description": "Von welchem SC20 gelesen wird."
+        },
+        "filename": {
+          "name": "Datei",
+          "description": "Wohin die .scen-Datei geschrieben wird. Der Ort muss in einem Verzeichnis liegen, das Home Assistant beschreiben darf."
+        }
       }
     },
     "preview_curve": {
       "name": "Tagesverlauf vorführen",
       "description": "Spielt das gespeicherte Programm im Zeitraffer ab. Zum Beenden den Modus wieder auf Tagesverlauf stellen.",
       "fields": {
-        "config_entry_id": { "name": "Controller", "description": "Auf welchem SC20 die Vorschau läuft." },
-        "speed_factor": { "name": "Geschwindigkeit", "description": "Wie viel schneller als in Echtzeit abgespielt wird. 100 zeigt einen ganzen Tag in etwa fünfzehn Minuten." },
-        "start_time": { "name": "Beginn", "description": "Minute des Tages, ab der abgespielt wird." },
-        "end_time": { "name": "Ende", "description": "Minute des Tages, bis zu der abgespielt wird." }
+        "config_entry_id": {
+          "name": "Controller",
+          "description": "Auf welchem SC20 die Vorschau läuft."
+        },
+        "speed_factor": {
+          "name": "Geschwindigkeit",
+          "description": "Wie viel schneller als in Echtzeit abgespielt wird. 100 zeigt einen ganzen Tag in etwa fünfzehn Minuten."
+        },
+        "start_time": {
+          "name": "Beginn",
+          "description": "Minute des Tages, ab der abgespielt wird."
+        },
+        "end_time": {
+          "name": "Ende",
+          "description": "Minute des Tages, bis zu der abgespielt wird."
+        }
       }
     },
     "set_clock": {
       "name": "Uhr stellen",
       "description": "Stellt die Uhr des Controllers auf die Ortszeit von Home Assistant. Der Tagesverlauf richtet sich nach dieser Uhr — geht sie falsch, verschiebt sich der ganze Lichttag.",
       "fields": {
-        "config_entry_id": { "name": "Controller", "description": "Welcher SC20 gestellt wird." }
+        "config_entry_id": {
+          "name": "Controller",
+          "description": "Welcher SC20 gestellt wird."
+        }
+      }
+    }
+  },
+  "selector": {
+    "moon_color": {
+      "options": {
+        "r": "Rot",
+        "b": "Blau",
+        "w": "Weiß"
       }
     }
   }

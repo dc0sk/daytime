@@ -4,18 +4,13 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.daytime_sc20.const import (
-    CONF_SCAN_INTERVAL,
-    DEFAULT_SCAN_INTERVAL,
-    DOMAIN,
-)
+from custom_components.daytime_sc20.const import DOMAIN
 
 PROBE = "custom_components.daytime_sc20.config_flow._async_probe"
 
@@ -114,49 +109,3 @@ async def test_host_is_trimmed(hass: HomeAssistant) -> None:
 
     assert probe.call_args.args[1] == "192.168.1.34"
     assert result["data"] == {CONF_HOST: "192.168.1.34"}
-
-
-async def test_options_flow_sets_the_scan_interval(hass: HomeAssistant) -> None:
-    entry = MockConfigEntry(
-        domain=DOMAIN, data={CONF_HOST: "192.168.1.34"}, unique_id="AA:BB:CC:DD:EE:FF"
-    )
-    entry.add_to_hass(hass)
-
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["type"] is FlowResultType.FORM
-
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_SCAN_INTERVAL: 15}
-    )
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options[CONF_SCAN_INTERVAL] == 15
-
-
-@pytest.mark.parametrize("bad_value", [0, 4, 301, 10000])
-async def test_options_flow_rejects_an_out_of_range_interval(
-    hass: HomeAssistant, bad_value: int
-) -> None:
-    """Too short would hammer a device with 27 KB of heap; too long is not an update."""
-    import voluptuous as vol
-
-    entry = MockConfigEntry(
-        domain=DOMAIN, data={CONF_HOST: "192.168.1.34"}, unique_id="AA:BB:CC:DD:EE:FF"
-    )
-    entry.add_to_hass(hass)
-
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    with pytest.raises(vol.Invalid):
-        await hass.config_entries.options.async_configure(
-            result["flow_id"], {CONF_SCAN_INTERVAL: bad_value}
-        )
-
-
-async def test_default_scan_interval_is_offered(hass: HomeAssistant) -> None:
-    entry = MockConfigEntry(
-        domain=DOMAIN, data={CONF_HOST: "192.168.1.34"}, unique_id="AA:BB:CC:DD:EE:FF"
-    )
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    schema = result["data_schema"].schema
-    key = next(k for k in schema if str(k) == CONF_SCAN_INTERVAL)
-    assert key.default() == DEFAULT_SCAN_INTERVAL

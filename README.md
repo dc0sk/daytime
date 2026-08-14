@@ -25,6 +25,34 @@ The full protocol reference, including what is proven and what is still a guess,
 Plus services for the lighting programme: `set_daycycle`, `get_daycycle`, `load_scenario`,
 `save_scenario`, `preview_curve` and `set_clock`.
 
+## Configuring it
+
+**Settings → Devices & Services → daytime SC20 → Configure.**
+
+The pages follow the controller's own web interface, so settings sit where a user of the
+vendor app expects them:
+
+| Page | What it holds |
+|---|---|
+| **Daycycle** | When the lighting day starts and ends, how long sunrise and sunset take, and the brightness — optionally per colour. This is the vendor app's "easy mode". |
+| **Moonlight** | Night lighting: new-moon and full-moon levels, whether to follow a 30-day lunar cycle, which colours carry it, and the window (which may run past midnight). |
+| **Cloud simulation** | How many clouds a day, how long they last, how much they dim, and how likely each one is to appear. |
+| **Acclimatisation** | The ramp for a newly set-up tank, and its pause switch. |
+| **Connection** | How often to poll. The only page stored in Home Assistant rather than on the lamp. |
+
+Every other page writes straight to the controller and reads its current settings when it
+opens — these are the lamp's settings, not Home Assistant's, and the vendor app is free to
+change them behind your back.
+
+The Daycycle page produces the same trapezoid the vendor app does. That is not a guess:
+feeding a device its own stored settings through this generator reproduces the schedule it
+is actually running, setpoint for setpoint, and there is a test pinning that. Saving
+replaces the whole programme, so the previous one is backed up first — and if you had
+hand-edited an expert curve, the page says so before flattening it.
+
+For a curve the easy-mode shape cannot express, use the `set_daycycle` service or
+`load_scenario` with a `.scen` file.
+
 ## Read this before you use it
 
 **Turning a light on or changing its brightness takes the controller out of its schedule.**
@@ -80,6 +108,8 @@ restart Home Assistant.
 
 You need the controller's IP address or hostname. If mDNS works on your network, the device
 answers to `sc20.local`. There is no password to enter.
+
+Everything else is configured afterwards from **Configure** on the integration's card.
 
 ## Working with the lighting programme
 

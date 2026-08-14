@@ -149,6 +149,63 @@ class DaycycleDescription:
     individual: bool = False
     intensities: tuple[int, ...] = field(default=(MAX_PERCENT,) * CHANNEL_COUNT)
 
+    @property
+    def levels(self) -> tuple[int, ...]:
+        """The daytime level of each channel.
+
+        `intensities` only applies when `individual` is set; otherwise the single
+        `intensity` governs every channel. A device was observed holding a stale
+        `intensities:85,85,85` alongside `intensity:90` while actually running 90, so
+        reading the wrong one yields a schedule the lamp is not on.
+        """
+        if not self.individual:
+            return (self.intensity,) * CHANNEL_COUNT
+        values = tuple(self.intensities[:CHANNEL_COUNT])
+        # Pad if the device sent fewer values than this product has channels.
+        return values + (self.intensity,) * (CHANNEL_COUNT - len(values))
+
+    def to_daycycle(self) -> Daycycle:
+        """Build the trapezoid schedule these settings describe.
+
+        This is the vendor app's "easy mode": dark until `start`, ramping up over `sunrise`
+        minutes, holding, then ramping down over `sunset` minutes to be dark again at
+        `end`, with anchor rows at minute 0 and 1440.
+
+        Verified against hardware — feeding a device its own `DSCRPTN` through this
+        reproduces the `DYCL` it is actually running, setpoint for setpoint.
+
+        Raises `SC20ValidationError` when the ramps do not fit between `start` and `end`,
+        which would otherwise emit setpoints out of order and write a corrupt schedule.
+        """
+        if not 0 <= self.start < self.end <= DAY_MINUTES:
+            raise SC20ValidationError(
+                "the lighting day must start before it ends and fit within one day, got"
+                f" start={self.start}, end={self.end}"
+            )
+        full_from = self.start + self.sunrise
+        full_until = self.end - self.sunset
+        if full_from > full_until:
+            raise SC20ValidationError(
+                f"sunrise ({self.sunrise} min) and sunset ({self.sunset} min) together are"
+                f" longer than the {self.end - self.start} min between start and end"
+            )
+
+        levels = self.levels
+        dark = (0,) * CHANNEL_COUNT
+        points = [Setpoint(0, dark)]
+        # Skip any point that would repeat the previous minute: a start of 0, or ramps
+        # that meet so the flat middle collapses to a single peak.
+        for minute, values in (
+            (self.start, dark),
+            (full_from, levels),
+            (full_until, levels),
+            (self.end, dark),
+            (DAY_MINUTES, dark),
+        ):
+            if minute > points[-1].minute:
+                points.append(Setpoint(minute, values))
+        return Daycycle(setpoints=tuple(points))
+
 
 @dataclass(frozen=True, slots=True)
 class Moon:

@@ -44,3 +44,40 @@ DAY_MINUTES_MAX: Final = 1439
 #: The device has no undo and does not acknowledge writes.
 BACKUP_STORAGE_KEY: Final = f"{DOMAIN}_daycycle_backup"
 BACKUP_STORAGE_VERSION: Final = 1
+
+# --- Options-flow form keys ---------------------------------------------------------------
+#
+# Shared across the configuration pages, which mirror the vendor web app's own screens.
+
+CONF_ACTIVE: Final = "active"
+CONF_START: Final = "start"
+CONF_END: Final = "end"
+CONF_SUNRISE: Final = "sunrise"
+CONF_SUNSET: Final = "sunset"
+CONF_BRIGHTNESS: Final = "brightness"
+CONF_INDIVIDUAL: Final = "individual"
+CONF_CHANNEL_LEVELS: Final = ("level_white", "level_blue", "level_red")
+
+CONF_LUNAR_CYCLE: Final = "lunar_cycle"
+CONF_COLOR: Final = "color"
+CONF_MIN_LEVEL: Final = "min_level"
+CONF_MAX_LEVEL: Final = "max_level"
+
+CONF_MAX_PER_DAY: Final = "max_per_day"
+CONF_PROBABILITY: Final = "probability"
+CONF_MIN_DURATION: Final = "min_duration"
+CONF_MAX_DURATION: Final = "max_duration"
+
+CONF_PAUSED: Final = "paused"
+CONF_DURATION_DAYS: Final = "duration_days"
+CONF_REDUCTION: Final = "reduction"
+
+#: The letters the device accepts in the moonlight colour string, in the order the vendor
+#: app builds them.
+MOON_COLORS: Final = ("r", "b", "w")
+
+# Form limits, taken from the vendor app's own sliders — the nearest thing to a documented
+# range this device has.
+MAX_CLOUDS_PER_DAY: Final = 1500
+MAX_CLOUD_DURATION: Final = 30
+MAX_ACCLIMATE_DAYS: Final = 100

@@ -11,7 +11,6 @@ destroy a configuration the user may have spent real time on.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
@@ -24,7 +23,6 @@ from homeassistant.core import (
 )
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .api import (
@@ -36,14 +34,13 @@ from .api import (
     Setpoint,
     protocol,
 )
+from .backup import async_backup_daycycle
 from .const import (
     ATTR_END_TIME,
     ATTR_FILENAME,
     ATTR_SETPOINTS,
     ATTR_SPEED_FACTOR,
     ATTR_START_TIME,
-    BACKUP_STORAGE_KEY,
-    BACKUP_STORAGE_VERSION,
     DOMAIN,
     SERVICE_GET_DAYCYCLE,
     SERVICE_LOAD_SCENARIO,
@@ -119,44 +116,6 @@ def _rows_from_daycycle(daycycle: Daycycle) -> list[list[int]]:
     return [[p.minute, *p.values] for p in daycycle.setpoints]
 
 
-async def _async_backup(hass: HomeAssistant, coordinator: SC20Coordinator) -> None:
-    """Save the schedule that is about to be replaced.
-
-    Best-effort: a failure to write the backup should not stop the user from changing their
-    lighting, but it is logged loudly enough to notice.
-    """
-    current = coordinator.client.state.daycycle
-    if current is None:
-        _LOGGER.warning(
-            "no daycycle has been read from %s yet, so nothing could be backed up",
-            coordinator.client.host,
-        )
-        return
-
-    store: Store[dict[str, Any]] = Store(hass, BACKUP_STORAGE_VERSION, BACKUP_STORAGE_KEY)
-    try:
-        saved = await store.async_load() or {}
-        host = coordinator.client.host
-        history = saved.setdefault(host, [])
-        history.append(
-            {
-                "saved_at": dt_util.utcnow().isoformat(),
-                "setpoints": _rows_from_daycycle(current),
-                "description": (
-                    protocol.encode_description(coordinator.client.state.description)
-                    if coordinator.client.state.description
-                    else None
-                ),
-            }
-        )
-        # Keep the last handful; this is a safety net, not an archive.
-        saved[host] = history[-10:]
-        await store.async_save(saved)
-        _LOGGER.info("backed up the current daycycle of %s before overwriting it", host)
-    except OSError as err:
-        _LOGGER.error("could not back up the daycycle before overwriting it: %s", err)
-
-
 @callback
 def async_setup_services(hass: HomeAssistant) -> None:
     """Register the services. Safe to call for every config entry."""
@@ -166,7 +125,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
     async def set_daycycle(call: ServiceCall) -> None:
         coordinator = _coordinator(hass, call)
         daycycle = _daycycle_from_rows(call.data[ATTR_SETPOINTS])
-        await _async_backup(hass, coordinator)
+        await async_backup_daycycle(hass, coordinator.client)
         try:
             await coordinator.async_write_then_refresh(
                 lambda: coordinator.client.async_set_daycycle(daycycle)
@@ -208,7 +167,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
         except SC20Error as err:
             raise ServiceValidationError(f"{filename} is not a usable scenario: {err}") from err
 
-        await _async_backup(hass, coordinator)
+        await async_backup_daycycle(hass, coordinator.client)
         try:
             await coordinator.async_write_then_refresh(
                 lambda: coordinator.client.async_set_daycycle(daycycle)
