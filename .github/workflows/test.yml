@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements-test.txt
+
+      - name: Ruff
+        run: |
+          ruff check .
+          ruff format --check .
+
+      # SC20_HOST is deliberately unset, so tests/test_live.py skips itself. Those tests
+      # talk to real aquarium hardware and have no business running in CI.
+      - name: Pytest
+        run: pytest tests/ --cov=custom_components/daytime_sc20 --cov-report=term-missing

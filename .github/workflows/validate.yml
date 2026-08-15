@@ -1,0 +1,37 @@
+name: Validate
+
+# HACS requires both of these to pass, with no errors and no ignores, before a repository
+# can be submitted to its default store. The weekly run matters as much as the push run:
+# both validators track Home Assistant and HACS releases, so a repository that passed once
+# can start failing without anything here changing.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hassfest:
+    name: hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Home Assistant publishes this action from master only — there are no release tags
+      # to pin to, and pinning a commit would mean validating against rules that Home
+      # Assistant has since changed, which defeats the point of running it.
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration

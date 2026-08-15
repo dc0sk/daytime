@@ -1,0 +1,7 @@
+# Test and lint dependencies, matching what the suite was last verified against.
+#
+# pytest-homeassistant-custom-component pins its own Home Assistant version, so listing
+# homeassistant here as well would risk the two disagreeing. Let the plugin choose.
+pytest-homeassistant-custom-component==0.13.316
+pytest-cov==7.0.0
+ruff==0.16.3
