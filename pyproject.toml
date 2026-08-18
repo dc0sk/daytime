@@ -1,6 +1,6 @@
 [project]
 name = "daytime-sc20"
-version = "0.4.1"
+version = "0.4.2"
 description = "Home Assistant integration for the daytime SC20 aquarium LED controller"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
