@@ -196,6 +196,11 @@ channels. Other members of this hardware family — the aquaLEDs HC and HC+, and
 variants — speak the same protocol but have six channels and a real moonlight channel;
 this integration assumes the SC20's three-channel model and does not support them.
 
+## Changelog
+
+See [`CHANGELOG.md`](CHANGELOG.md). Breaking changes are called out explicitly — the
+project is pre-1.0, so they can land in a minor bump.
+
 ## Licence
 
 Apache License 2.0 — see [`LICENSE`](LICENSE).
