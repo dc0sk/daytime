@@ -8,13 +8,22 @@ entities make.
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import datetime
 from typing import Any
 from unittest.mock import patch
 
 import pytest
-from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST, STATE_OFF, STATE_ON
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    CONF_HOST,
+    STATE_OFF,
+    STATE_ON,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
+)
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daytime_sc20.api import (
@@ -422,3 +431,147 @@ async def test_unloading_disconnects_the_client(hass: HomeAssistant, setup_entry
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert ("disconnect", None) in client.calls
+
+
+# --- moonlight lunar cycle ----------------------------------------------------------------
+
+
+async def test_lunar_cycle_switch_reflects_the_device(hass: HomeAssistant, setup_entry) -> None:
+    await setup_entry()
+    assert hass.states.get("switch.reef_tank_lunar_cycle").state == STATE_ON
+
+
+async def test_toggling_the_lunar_cycle_preserves_the_rest_of_the_record(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    _, client = await setup_entry()
+    before = client.state.moon
+
+    await hass.services.async_call(
+        "switch", "turn_off", {ATTR_ENTITY_ID: "switch.reef_tank_lunar_cycle"}, blocking=True
+    )
+
+    sent = next(v for name, v in client.calls if name == "set_moon")
+    assert sent.cycle is False
+    assert sent.active == before.active
+    assert sent.minimum == before.minimum
+    assert sent.maximum == before.maximum
+    assert sent.color == before.color
+    assert sent.start == before.start
+    assert sent.end == before.end
+
+
+async def test_lunar_cycle_is_unavailable_until_the_record_has_been_read(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    state = _state()
+    state.moon = None
+    await setup_entry(state)
+    assert hass.states.get("switch.reef_tank_lunar_cycle").state == STATE_UNAVAILABLE
+
+
+# --- moonlight colour --------------------------------------------------------------------
+
+
+async def test_moonlight_colour_reflects_the_device(hass: HomeAssistant, setup_entry) -> None:
+    await setup_entry()
+    entity = hass.states.get("select.reef_tank_moonlight_colour")
+    assert entity.state == "b"
+    # All seven non-empty combinations are offered, so there is no invalid selection.
+    assert entity.attributes["options"] == ["r", "b", "w", "rb", "rw", "bw", "rbw"]
+
+
+@pytest.mark.parametrize(
+    ("device_value", "expected"),
+    [
+        ("b", "b"),
+        ("wb", "bw"),  # order on the wire does not matter
+        ("BW", "bw"),  # nor does case
+        ("rbw", "rbw"),
+        ("", None),  # nothing selected is not a valid option
+        ("x", None),  # nor is a letter this device does not have
+    ],
+)
+async def test_moonlight_colour_is_canonicalised(
+    hass: HomeAssistant, setup_entry, device_value: str, expected: str | None
+) -> None:
+    """One colour set has exactly one spelling, whatever the device sends."""
+    state = _state()
+    state.moon = dataclasses.replace(state.moon, color=device_value)
+    await setup_entry(state)
+    assert hass.states.get("select.reef_tank_moonlight_colour").state == (
+        expected if expected is not None else STATE_UNKNOWN
+    )
+
+
+async def test_selecting_a_colour_changes_only_that_field(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    _, client = await setup_entry()
+    before = client.state.moon
+
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {ATTR_ENTITY_ID: "select.reef_tank_moonlight_colour", "option": "rbw"},
+        blocking=True,
+    )
+
+    sent = next(v for name, v in client.calls if name == "set_moon")
+    assert sent.color == "rbw"
+    assert sent.active == before.active
+    assert sent.cycle == before.cycle
+    assert sent.minimum == before.minimum
+    assert sent.maximum == before.maximum
+    assert sent.start == before.start
+    assert sent.end == before.end
+
+
+async def test_moonlight_colour_is_unavailable_until_the_record_has_been_read(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    state = _state()
+    state.moon = None
+    await setup_entry(state)
+    assert hass.states.get("select.reef_tank_moonlight_colour").state == STATE_UNAVAILABLE
+
+
+# --- superseded entities ------------------------------------------------------------------
+
+
+async def test_superseded_number_entities_are_removed(hass: HomeAssistant, setup_entry) -> None:
+    """Moonlight start/end were `number` entities before they were `time` entities.
+
+    A unique id is scoped per entity domain, so the `time` versions never took the old rows
+    over; they were left behind as permanently `unavailable`. Setup must clear them.
+    """
+    registry = er.async_get(hass)
+    stale = registry.async_get_or_create(
+        "number",
+        DOMAIN,
+        "AA:BB:CC:DD:EE:FF_moonlight_start",
+        suggested_object_id="reef_tank_moonlight_start",
+    )
+    assert registry.async_get(stale.entity_id) is not None
+
+    await setup_entry()
+
+    assert registry.async_get(stale.entity_id) is None
+    # The replacement is present and working.
+    assert hass.states.get("time.reef_tank_moonlight_start").state == "22:00:00"
+
+
+async def test_removal_leaves_entities_that_are_still_provided_alone(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    """The cleanup must be narrow: only the two keys it names, only in `number`."""
+    await setup_entry()
+    registry = er.async_get(hass)
+    assert (
+        registry.async_get_entity_id("time", DOMAIN, "AA:BB:CC:DD:EE:FF_moonlight_start")
+        is not None
+    )
+    assert (
+        registry.async_get_entity_id("number", DOMAIN, "AA:BB:CC:DD:EE:FF_moonlight_min")
+        is not None
+    )

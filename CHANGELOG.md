@@ -10,6 +10,28 @@ they are called out explicitly where they do.
 
 ## [Unreleased]
 
+### Added
+
+- `switch.*_lunar_cycle` — whether moonlight follows the lunar phase or holds a fixed
+  level. The setting was already on the moonlight options page but had no entity, so it
+  could not be automated or put on a dashboard.
+- `select.*_moonlight_colour` — which of the three channels carry the moonlight. Modelled
+  as the seven non-empty combinations rather than three switches, because the device emits
+  no moonlight at all when the colour string is empty: three independent switches would let
+  the last one be turned off and leave moonlight silently dark. A select has no invalid
+  state to defend. Whatever order or case the device reports, the value is normalised to one
+  spelling, so `wb` and `BW` both read as `bw`.
+
+### Fixed
+
+- Registry rows for moonlight start/end are cleaned up on setup. They were `number`
+  entities holding a minute-of-day before they became `time` entities; a unique id is
+  scoped per entity domain, so the `time` versions never took the old rows over and they
+  were left behind as permanently `unavailable`. On a device page they look like the feature
+  is broken, and they are easy to put on a dashboard by mistake. The cleanup is narrow — two
+  named keys, `number` only — and anything still provided gets its row back as the platforms
+  set up.
+
 ## [0.4.2] - 2026-08-18
 
 Packaging only — no functional change to the integration. Cut so that the contents HACS

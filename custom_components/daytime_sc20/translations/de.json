@@ -141,11 +141,26 @@
           "daycycle": "Tagesverlauf",
           "manual": "Manuell"
         }
+      },
+      "moonlight_color": {
+        "name": "Mondlicht-Farbe",
+        "state": {
+          "r": "Rot",
+          "b": "Blau",
+          "w": "Weiß",
+          "rb": "Rot + Blau",
+          "rw": "Rot + Weiß",
+          "bw": "Blau + Weiß",
+          "rbw": "Rot + Blau + Weiß"
+        }
       }
     },
     "switch": {
       "moonlight": {
         "name": "Mondlicht"
+      },
+      "moonlight_lunar_cycle": {
+        "name": "Mondphase"
       },
       "cloud_simulation": {
         "name": "Wolkensimulation"
