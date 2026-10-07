@@ -21,10 +21,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import SC20Client, SC20ConnectionError
-from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import SC20Coordinator
 from .services import async_setup_services
 
@@ -41,6 +42,34 @@ PLATFORMS: list[Platform] = [
 ]
 
 type SC20ConfigEntry = ConfigEntry[SC20Coordinator]
+
+#: Entities this integration used to create and no longer does, as (entity domain, key).
+#: Moonlight start and end were `number` entities holding a minute-of-day before they became
+#: proper `time` entities. A unique id is scoped per entity domain, so the `time` versions
+#: did not take over the old rows — they were simply abandoned.
+_SUPERSEDED_ENTITIES: tuple[tuple[str, str], ...] = (
+    (Platform.NUMBER, "moonlight_start"),
+    (Platform.NUMBER, "moonlight_end"),
+)
+
+
+def _async_remove_superseded_entities(hass: HomeAssistant, entry: SC20ConfigEntry) -> None:
+    """Delete registry rows for entities this integration stopped providing.
+
+    Home Assistant keeps a registry row forever once it has seen an entity, and shows it as
+    `unavailable` if nothing provides it any more. Nothing cleans that up on its own, so an
+    install that predates a rename is left with permanently dead entities: on a device page
+    they look like the feature is broken, and they are easy to put on a dashboard by
+    mistake. Removing them here is safe — anything that is still provided gets its row back
+    as the platforms set up moments later.
+    """
+    registry = er.async_get(hass)
+    base = entry.unique_id or entry.entry_id
+    for domain, key in _SUPERSEDED_ENTITIES:
+        entity_id = registry.async_get_entity_id(domain, DOMAIN, f"{base}_{key}")
+        if entity_id is not None:
+            _LOGGER.debug("removing superseded entity %s", entity_id)
+            registry.async_remove(entity_id)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SC20ConfigEntry) -> bool:
@@ -69,6 +98,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SC20ConfigEntry) -> bool
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_options_change))
 
+    _async_remove_superseded_entities(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     async_setup_services(hass)
     return True

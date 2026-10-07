@@ -141,11 +141,26 @@
           "daycycle": "Daycycle",
           "manual": "Manual"
         }
+      },
+      "moonlight_color": {
+        "name": "Moonlight colour",
+        "state": {
+          "r": "Red",
+          "b": "Blue",
+          "w": "White",
+          "rb": "Red + blue",
+          "rw": "Red + white",
+          "bw": "Blue + white",
+          "rbw": "Red + blue + white"
+        }
       }
     },
     "switch": {
       "moonlight": {
         "name": "Moonlight"
+      },
+      "moonlight_lunar_cycle": {
+        "name": "Lunar cycle"
       },
       "cloud_simulation": {
         "name": "Cloud simulation"

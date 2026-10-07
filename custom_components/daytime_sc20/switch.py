@@ -37,6 +37,16 @@ async def _set_moon(client: SC20Client, state: SC20State, value: bool) -> None:
     await client.async_set_moon(dataclasses.replace(state.moon, active=value))
 
 
+async def _set_moon_cycle(client: SC20Client, state: SC20State, value: bool) -> None:
+    """Whether moonlight follows the lunar phase or sits at a fixed level.
+
+    Same whole-record write as every other moonlight field.
+    """
+    if state.moon is None:
+        return
+    await client.async_set_moon(dataclasses.replace(state.moon, cycle=value))
+
+
 async def _set_cloud(client: SC20Client, state: SC20State, value: bool) -> None:
     if state.cloud is None:
         return
@@ -67,6 +77,13 @@ SWITCHES: tuple[SC20SwitchDescription, ...] = (
         icon="mdi:weather-night",
         is_on=lambda state: state.moon.active if state.moon else None,
         set_state=_set_moon,
+    ),
+    SC20SwitchDescription(
+        key="moonlight_lunar_cycle",
+        translation_key="moonlight_lunar_cycle",
+        icon="mdi:moon-waning-crescent",
+        is_on=lambda state: state.moon.cycle if state.moon else None,
+        set_state=_set_moon_cycle,
     ),
     SC20SwitchDescription(
         key="cloud_simulation",
