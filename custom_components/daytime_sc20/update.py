@@ -106,7 +106,7 @@ class SC20Update(SC20Entity, UpdateEntity):
     def _info(self) -> DeviceInfo | None:
         return self._state.device_info
 
-    def _revision(self, pair_name: str) -> str | None:
+    def _raw_revision(self, pair_name: str) -> int | None:
         info = self._info
         if info is None:
             return None
@@ -114,7 +114,11 @@ class SC20Update(SC20Entity, UpdateEntity):
         index = self.entity_description.index
         if index >= len(pair):
             return None
-        return DeviceInfo.format_revision(pair[index])
+        return pair[index]
+
+    def _revision(self, pair_name: str) -> str | None:
+        raw = self._raw_revision(pair_name)
+        return None if raw is None else DeviceInfo.format_revision(raw)
 
     @property
     def installed_version(self) -> str | None:
@@ -124,14 +128,17 @@ class SC20Update(SC20Entity, UpdateEntity):
     def latest_version(self) -> str | None:
         """What the controller found upstream.
 
-        If it has not managed to check — no internet, or the vendor's server down — the
-        pair reads all zeroes. Reporting "00.0" would show a permanent phantom downgrade,
-        so fall back to the installed version, which renders as "up to date".
+        If it has not managed to check, the pair reads all zeroes; if its check failed — no
+        internet, or the vendor's server down — it reads -1 (seen on a controller in a VLAN
+        without internet, 2026-11-24), which `format_revision` would render as "0-1.9".
+        Neither is a version: reporting it would show a permanent phantom update (and arm the
+        install button), so anything not positive falls back to the installed version,
+        which renders as "up to date".
         """
-        latest = self._revision("latest_revision")
-        if latest is None or latest == "00.0":
+        raw = self._raw_revision("latest_revision")
+        if raw is None or raw <= 0:
             return self.installed_version
-        return latest
+        return DeviceInfo.format_revision(raw)
 
     @property
     def available(self) -> bool:

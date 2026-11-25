@@ -212,6 +212,27 @@ async def test_a_failed_upstream_check_does_not_show_a_phantom_downgrade(
     assert firmware.state == STATE_OFF
 
 
+async def test_a_failed_upstream_check_reporting_minus_one_is_not_an_update(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    """A controller whose check failed reports [-1, -1]; once rendered as "0-1.9".
+
+    Seen live on a controller in a VLAN without internet: both halves offered an "update"
+    to 0-1.9, and the install guard only compares strings, so it would have flashed.
+    """
+    state = _state()
+    state.device_info = dataclasses.replace(state.device_info, latest_revision=(-1, -1))
+    await setup_entry(state)
+
+    for entity_id, installed in (
+        ("update.reef_tank_firmware", "02.3"),
+        ("update.reef_tank_web_app", "01.5"),
+    ):
+        entity = hass.states.get(entity_id)
+        assert entity.attributes["latest_version"] == installed
+        assert entity.state == STATE_OFF
+
+
 async def test_update_entity_offers_install(hass: HomeAssistant, setup_entry) -> None:
     from homeassistant.components.update import UpdateEntityFeature
 

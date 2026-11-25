@@ -10,6 +10,12 @@ they are called out explicitly where they do.
 
 ## [Unreleased]
 
+### Fixed
+
+- Update entities no longer offer a phantom update to "0-1.9" when the controller's own
+  upstream check failed (it reports revision -1, e.g. without internet). Any revision that is
+  not positive now counts as unknown, as zero already did.
+
 ## [0.5.0] - 2026-10-07
 
 ### Added
