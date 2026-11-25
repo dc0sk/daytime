@@ -10,6 +10,8 @@ they are called out explicitly where they do.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-25
+
 ### Fixed
 
 - Update entities no longer offer a phantom update to "0-1.9" when the controller's own
@@ -180,7 +182,8 @@ First release.
 - The recovered protocol reference under `docs/protocol/`, labelling every claim
   CONFIRMED, INFERRED or UNKNOWN, and `tools/sc20_probe.py`, which produced the captures.
 
-[Unreleased]: https://github.com/dc0sk/daytime/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/dc0sk/daytime/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/dc0sk/daytime/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/dc0sk/daytime/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/dc0sk/daytime/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/dc0sk/daytime/compare/v0.4.0...v0.4.1
